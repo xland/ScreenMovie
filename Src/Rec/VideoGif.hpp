@@ -31,19 +31,23 @@ namespace VideoGif {
 
     inline void drawCursor(HDC hMemDC, GifParam* param) {
         CURSORINFO cursorInfo = { sizeof(CURSORINFO) };
-        GetCursorInfo(&cursorInfo);
-        if (cursorInfo.flags == CURSOR_SHOWING) {
-            ICONINFO iconInfo;
-            GetIconInfo(cursorInfo.hCursor, &iconInfo);
-            int localX = cursorInfo.ptScreenPos.x - param->x - iconInfo.xHotspot;
-            int localY = cursorInfo.ptScreenPos.y - param->y - iconInfo.yHotspot;
+        if (!GetCursorInfo(&cursorInfo) || !(cursorInfo.flags & CURSOR_SHOWING) ||
+            cursorInfo.hCursor == nullptr) return;
+        int localX = cursorInfo.ptScreenPos.x - param->x;
+        int localY = cursorInfo.ptScreenPos.y - param->y;
+        ICONINFO iconInfo{};
+        if (GetIconInfo(cursorInfo.hCursor, &iconInfo)) {
+            localX -= iconInfo.xHotspot;
+            localY -= iconInfo.yHotspot;
+            // GetIconInfo 造出的位图归调用方所有，必须释放。
             if (iconInfo.hbmMask) DeleteObject(iconInfo.hbmMask);
             if (iconInfo.hbmColor) DeleteObject(iconInfo.hbmColor);
-            if (localX >= 0 && localX < param->w  && localY >= 0 && localY < param->h) {
-                DrawIconEx(hMemDC, localX, localY, cursorInfo.hCursor, 0, 0, 0, nullptr, DI_NORMAL | DI_DEFAULTSIZE);
-            }
-            DestroyIcon(cursorInfo.hCursor);
         }
+        if (localX >= 0 && localX < param->w && localY >= 0 && localY < param->h) {
+            DrawIconEx(hMemDC, localX, localY, cursorInfo.hCursor, 0, 0, 0, nullptr,
+                       DI_NORMAL | DI_DEFAULTSIZE);
+        }
+        // 不能 DestroyIcon：hCursor 是系统共享光标句柄，销毁会破坏 user32 状态导致崩溃。
     }
     
     //这段代码是好的，但会让exe体积从632增大到1404

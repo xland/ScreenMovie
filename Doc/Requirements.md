@@ -23,6 +23,19 @@
 - **exe 体积优先**：Release 用 `/O1`（MinSpace）+ `/OPT:REF` + `/OPT:ICF` + 关调试信息 + 关异常展开表（`/EHs-c-`，C4530 在 `pch.h` 抑制）。基线 1,272,320 B → 1,267,200 B。
   - 体积大头是静态 CRT（`/MT`，DUI 的 ADR-008 零依赖约束）与 gifski 的 Rust 运行时，编译开关可压缩空间有限。
   - ATL `CComPtr` / WRL `ComPtr` 都是 header-only 模板，不链接库、不增加 exe 体积；`= 0` / `= NULL` 初始化依赖 ATL 接口，替换成 WRL 收益极小且风险大，保留。
+- **DUI 新增能力适配**（用户根据本项目反馈扩展了 DUI，2026-11-25）：本项目已改用这些能力，不再手写对应 Win32：
+  - `WindowOptions.topmost / toolWindow / noActivate / excludeFromCapture` 声明浮层属性；`Window::SetMouseThrough()` 运行期切换鼠标穿透。
+  - `dui::Screen`（`Core/Screen.h`）：`VirtualBounds()` 取虚拟桌面、`FromPoint()` + `workAreaPx` 做工具条工作区避让，替代 `GetSystemMetrics` / `MonitorFromRect`。
+  - `Element::GetWindow()` + `Window::Scale()`：选区层直接取所属窗口 DPI，替代此前的全局 `g_scale`。
+  - `Window::SetTimer()/KillTimer()`：倒计时与录制计时绑定窗口，随窗口销毁自动失效，替代 `App::SetTimer`。
+  - `Window::BoundsPx()/SetBoundsPx()/MoveToPx()`：覆盖层铺满虚拟桌面、工具条按工作区避让，替代手写 `SetWindowPos`；`Window::Show()/Hide()` 替代 `ShowWindow`。
+  - 仍保留的 Win32：窗口高亮吸附的 `EnumWindows + DwmGetWindowAttribute`（框架明确不提供）、临时文件 `CopyFileW/DeleteFileW`、`SetWindowRgn`（见下）。`Activate()/FlashFrame()` 本项目用不上（不抢焦点、无任务栏图标）。
+- **覆盖层定版（核对 ScreenCapture 后，用户要求）**：不用桌面快照，回到 `transparent=true` 全透明窗口——这是 ScreenCapture 的方案（`WS_EX_NOREDIRECTIONBITMAP` + DirectComposition + 预乘 alpha swap chain，`Clear(0)` 清全透明，选区内什么都不画即"视觉挖孔"）。
+  - 全屏 transparent 窗必须设**整窗矩形 `SetWindowRgn`**，否则 DWM 把透明区合成成白板（实测确认）。
+  - 遮罩 = 四块半透明黑矩形（`0x77000000`）+ 蓝色选区框；选区内不画 → 桌面透出，录制时也不进成品（透明像素不遮挡桌面）。
+  - 鼠标：选区阶段 `HTCLIENT` 正常接收拖拽；**选区完成后** `SetMouseThrough(true)` + 锁定选区（停止高亮吸附），鼠标穿透给下层程序；工具条是独立窗口照常接收点击。与 ScreenCapture 的 `onHitTest→HTTRANSPARENT` + `WS_EX_TRANSPARENT` 双保险同思路。
+  - 曾尝试"抓屏快照当背景 + 不透明窗口"，因需 GDI 抓屏/BMP 编码且丢失实时性，按用户要求废弃。
+- **字体图标 □ 修复**：`iconfont.ttf` 虽由 PostBuild 拷到 exe 目录，但 `LoadFontFamily(L"iconfont.ttf")` 的相对路径依赖工作目录（VS 调试时是工程根 → 加载失败 → PUA 码位静默回退成 □）。改为 `GetModuleFileNameW` 取 exe 同目录绝对路径。图标码位 `\ue654/\ue73b/\ue660/\ue62d` 与 ScreenCapture 一致，无误。
 
 ## 3. 用户操作方式（已确认）
 

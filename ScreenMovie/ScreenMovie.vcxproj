@@ -64,7 +64,7 @@
       <!-- 链接期剔除未引用代码/折叠相同 COMDAT -->
       <OptimizeReferences Condition="'$(Configuration)'=='Release'">true</OptimizeReferences>
       <EnableCOMDATFolding Condition="'$(Configuration)'=='Release'">true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SolutionDir)..\DUI\Build\DUI\$(Configuration)\DUI.lib;mf.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;propsys.lib;D:\sdk\gifski\target\release\gifski.lib;ws2_32.lib;ntdll.lib;Userenv.lib;dwmapi.lib;shlwapi.lib;windowscodecs.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\DUI\Build\DUI\$(Configuration)\DUI.lib;mf.lib;mfreadwrite.lib;mfplat.lib;mfuuid.lib;propsys.lib;D:\sdk\gifski\target\release\gifski.lib;ws2_32.lib;ntdll.lib;Userenv.lib;dwmapi.lib;shlwapi.lib;windowscodecs.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(TargetDir)iconfont.ttf" copy "$(ProjectDir)..\Src\Res\iconfont.ttf" "$(TargetDir)iconfont.ttf" &gt;nul</Command>
@@ -73,9 +73,17 @@
   <ItemGroup>
     <ClCompile Include="..\Src\main.cpp" />
     <ClCompile Include="..\Src\Recorder.cpp" />
+    <ClCompile Include="..\Src\ToolBar.cpp" />
+    <ClCompile Include="..\Src\SelectionLayer.cpp" />
+    <ClCompile Include="..\Src\CoverWindow.cpp" />
+    <ClCompile Include="..\Src\MainApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Src\pch.h" />
+    <ClInclude Include="..\Src\ToolBar.h" />
+    <ClInclude Include="..\Src\SelectionLayer.h" />
+    <ClInclude Include="..\Src\CoverWindow.h" />
+    <ClInclude Include="..\Src\MainApp.h" />
     <ClInclude Include="..\Src\Recorder.h" />
     <ClInclude Include="..\Src\Rec\VideoMp4.hpp" />
     <ClInclude Include="..\Src\Rec\VideoGif.hpp" />
